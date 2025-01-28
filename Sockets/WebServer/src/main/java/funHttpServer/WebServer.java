@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.nio.charset.Charset;
+import org.json.*;
 
 class WebServer {
   public static void main(String args[]) {
@@ -209,6 +210,8 @@ class WebServer {
               builder.append("Content-Type: text/html; charset=utf-8\n");
               builder.append("\n");
               builder.append("Error: Missing required parameters 'num1' and 'num2'.");
+              response = builder.toString().getBytes();
+              return response;
             }
 
             // extract required fields from parameters
@@ -251,15 +254,170 @@ class WebServer {
 
           Map<String, String> query_pairs = new LinkedHashMap<String, String>();
           query_pairs = splitQuery(request.replace("github?", ""));
-          String json = fetchURL("https://api.github.com/" + query_pairs.get("query"));
-          System.out.println(json);
 
+          // Validate query parameters
+          if(!query_pairs.containsKey("query") || query_pairs.get("query").isEmpty()){
+            builder.append("HTTP/1.1 400 Bad Request\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Error: Missing or invalid 'query' parameter.\n");
+
+            response = builder.toString().getBytes();
+            return response;
+          }
+
+          try {
+            String json = fetchURL("https://api.github.com/" + query_pairs.get("query"));
+
+            JSONArray repos = new JSONArray(json);
+
+            JSONArray resultArray = new JSONArray();
+
+            for (int i=0; i< repos.length(); i++){
+              JSONObject repo = repos.getJSONObject(i);
+
+              String fullName = repo.getString("full_name");
+              int id = repo.getInt("id");
+              String login = repo.getJSONObject("owner").getString("login");
+
+              JSONObject repoData = new JSONObject();
+              repoData.put("full_name", fullName);
+              repoData.put("id", id);
+              repoData.put("owner_login", login);
+
+              resultArray.put(repoData);
+            }
+
+
+            builder.append("HTTP/1.1 200 OK\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append(resultArray.toString(2));
+          }catch (JSONException e){
+            // Handle JSON parsing errors
+            builder.append("HTTP/1.1 500 Internal Server Error\n");
+            builder.append("Content-Type: application/json; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Error: Failed to parse JSON from GitHub API.");
+          } catch (Exception e) {
+            // Handle other errors
+            builder.append("HTTP/1.1 500 Internal Server Error\n");
+            builder.append("Content-Type: application/json; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Error: Unable to fetch data from GitHub API.");
+          }
+
+          response = builder.toString().getBytes();
+          return response;
+
+          // TODO: Parse the JSON returned by your fetch and create an appropriate
+          // response based on what the assignment document asks for
+
+        }else if(request.contains("conferencewinner?")){
+          Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+          query_pairs = splitQuery(request.replace("conferencewinner?", ""));
+
+          // Validate query parameters
+          if(!query_pairs.containsKey("year") || !query_pairs.containsKey("conference")){
+            builder.append("HTTP/1.1 400 Bad Request\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Error: Missing require parameters 'year' and 'conference'.\n");
+            response = builder.toString().getBytes();
+            return response;
+          }
+
+          try{
+            //Extract & validate Inputs
+            int year = Integer.parseInt(query_pairs.get("year"));
+            String conference = query_pairs.get("conference").toUpperCase();
+
+            //Data set
+            Map<Integer, Map<String, String>> championshipWinners = new LinkedHashMap<>() {{
+              put(2020, Map.of("AFC", "Kansas City Chiefs", "NFC", "Tampa Bay Buccaneers"));
+              put(2021, Map.of("AFC", "Cincinnati Bengals", "NFC", "Los Angeles Rams"));
+              put(2022, Map.of("AFC", "Kansas City Chiefs", "NFC", "Philadelphia Eagles"));
+              put(2023, Map.of("AFC", "Kansas City Chiefs", "NFC", "San Francisco 49ers"));
+              put(2024, Map.of("AFC", "Kansas City Chiefs", "NFC", "Philadelphia Eagles"));
+            }};
+
+            if (!championshipWinners.containsKey(year)) {
+              throw new IllegalArgumentException("Year not found in dataset.");
+            }
+            if (!championshipWinners.get(year).containsKey(conference)) {
+              throw new IllegalArgumentException("Invalid conference. Must be 'AFC' or 'NFC'.");
+            }
+
+
+            String winner = championshipWinners.get(year).get(conference);
+
+            //Response
+            builder.append("HTTP/1.1 200 OK\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Year: ").append(year).append(" , ");
+            builder.append("Conference: ").append(conference).append(" , ");
+            builder.append("Winner: ").append(winner).append(" ");
+
+          }catch (NumberFormatException e){
+            builder.append("HTTP/1.1 400 Bad Request\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Error: Year must be a valid integer.");
+          }catch (IllegalArgumentException e){
+            builder.append("HTTP/1.1 400 Bad Request\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Error: " + e.getMessage());
+          }
+
+          response = builder.toString().getBytes();
+          return response;
+
+        } else if (request.contains("anagram?")){
+          Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+          query_pairs = splitQuery(request.replace("anagram?", ""));
+          System.out.println("Query Pairs: " + query_pairs); // Debugging line
+
+          // Validate query Parameters
+          if (query_pairs.get("word1") == null || query_pairs.get("word2") == null ||
+              query_pairs.get("word1").isEmpty() || query_pairs.get("word2").isEmpty()) {
+            builder.append("HTTP/1.1 400 Bad Request\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Error: Missing required parameters 'word1' and 'word2'.");
+            response = builder.toString().getBytes();
+            return response;
+          }
+
+          //Extract inputs
+          String word1 = query_pairs.get("word1").toLowerCase();
+          String word2 = query_pairs.get("word2").toLowerCase();
+
+          // Validate that inputs contain only alphabetic characters
+          if (!word1.matches("[a-zA-Z]+") || !word2.matches("[a-zA-Z]+")) {
+            builder.append("HTTP/1.1 400 Bad Request\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Error: Both inputs must contain only alphabetic characters.");
+            response = builder.toString().getBytes();
+            return response;
+          }
+
+          //Check if words are anagrams
+          boolean areAnagrams = isAnagram(word1, word2);
+
+          //Build Response
           builder.append("HTTP/1.1 200 OK\n");
           builder.append("Content-Type: text/html; charset=utf-8\n");
           builder.append("\n");
-          builder.append("Check the todos mentioned in the Java source file");
-          // TODO: Parse the JSON returned by your fetch and create an appropriate
-          // response based on what the assignment document asks for
+          builder.append("word1 = ").append(word1).append(", ");
+          builder.append("word2 = ").append(word2).append(", ");
+          builder.append("Are Anagrams?: ").append(areAnagrams ? "Yes" : "No");
+
+          response = builder.toString().getBytes();
+          return response;
+
 
         } else {
           // if the request is not recognized at all
@@ -282,6 +440,23 @@ class WebServer {
   }
 
   /**
+   * Helper Method to check if two words are anagrams.
+   * @param word1 first word
+   * @param word2 first word
+   * @return true if words are anagrams
+   */
+  public boolean isAnagram(String word1, String word2){
+    if(word1.length() != word2.length()){
+      return false;
+    }
+    char[] chars1 = word1.toCharArray();
+    char[] chars2 = word2.toCharArray();
+    Arrays.sort(chars1);
+    Arrays.sort(chars2);
+    return Arrays.equals(chars1, chars2);
+  }
+
+  /**
    * Method to read in a query and split it up correctly
    * @param query parameters on path
    * @return Map of all parameters and their specific values
@@ -294,8 +469,16 @@ class WebServer {
     // ["q=hello+world%2Fme", "bob=5"]
     for (String pair : pairs) {
       int idx = pair.indexOf("=");
-      query_pairs.put(URLDecoder.decode(pair.substring(0, idx), "UTF-8"),
-          URLDecoder.decode(pair.substring(idx + 1), "UTF-8"));
+
+      if(idx > 0) {
+        query_pairs.put(
+                URLDecoder.decode(pair.substring(0, idx), "UTF-8"),
+                URLDecoder.decode(pair.substring(idx + 1), "UTF-8")
+        );
+      }else{
+        query_pairs.put(URLDecoder.decode(pair, "UTF-8"), "");
+      }
+
     }
     // {{"q", "hello world/me"}, {"bob","5"}}
     return query_pairs;
