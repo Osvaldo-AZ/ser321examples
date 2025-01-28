@@ -3,13 +3,35 @@
 		<link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
 	</head>
 	<body>
-		<h3>You can make the following GET requests<h3>
+		<h3>You can make the following GET requests</h3>
 		<ul>
 			<li>/file/sample.html -- returns the content of the file sample.html</li>
-			<li>/json -- returns a json of the /random request</a></li>
-			<li>/random -- returns index.html</a></li>
+			<li>/json -- returns a json of the /random request</li>
+			<li>/random -- returns index.html</li>
 		</ul>
 		<h3>File Structure in www (you can use /file/www/FILENAME):</h3>
 		${links}
+
+			<h3><u>Additional Requests</u></h3>
+
+			<h4>Multiply</h4>
+			<p>Multiply 2 Integers</p>
+			<p>Example: <a href="/multiply?num1=5&num2=3">/multiply?num1=5&num2=3</a></p>
+			<p>Expected Output: Result is: 15</p>
+
+			<h4>GitHub</h4>
+			<p>Displays full_name, ID, and login of the owner of the public repos.</p>
+			<p>Example: <a href="/github?query=users/amehlhase316/repos">/github?query=users/amehlhase316/repos</a></p>
+
+			<h4>Conference Championship Winner</h4>
+			<p>Retrieve the winner of the AFC or NFC championship for a specific year* </p>
+			<p>	*Between 2020 & 2025</p>
+			<p>Example: <a href="/conferencewinner?year=2020&conference=AFC">/conferencewinner?year=2020&conference=AFC</a></p>
+			<p>Expected Response: Year: 2020 , Conference: AFC , Winner: Kansas City Chiefs</p>
+
+			<h4>Anagram Checker</h4>
+			<p>Check if two words are anagrams of each other.</p>
+			<p>Example: <a href="/anagram?word1=listen&word2=silent">/anagram?word1=listen&word2=silent</a></p>
+			<p>Expected Response: word1 = listen, word2 = silent, Are Anagrams?: Yes</p>
 	</body>
 </html>
